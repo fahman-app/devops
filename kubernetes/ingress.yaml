@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${SERVICE_NAME}-ingress-fahman
+  namespace: ${NAMESPACE_NAME}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod  # Uncomment for TLS/SSL
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Force HTTPS
+spec:
+  # Uncomment for TLS/HTTPS
+  # tls:
+  # - hosts:
+  #   - fahman.your-domain.com
+  #   secretName: ${SERVICE_NAME}-fahman-tls
+  rules:
+    - host: fahman.your-domain.com # Replace with your first domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fahman-app
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${SERVICE_NAME}-ingress-fahman-ed
+  namespace: ${NAMESPACE_NAME}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod  # Uncomment for TLS/SSL
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Force HTTPS
+spec:
+  # Uncomment for TLS/HTTPS
+  # tls:
+  # - hosts:
+  #   - fahman-ed.your-domain.com
+  #   secretName: ${SERVICE_NAME}-fahman-ed-tls
+  rules:
+    - host: fahman-ed.your-domain.com # Replace with your second domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fahman-ed
+                port:
+                  number: 80
