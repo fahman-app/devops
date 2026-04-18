@@ -1,9 +1,3 @@
-# Enable Cloud DNS API
-resource "google_project_service" "dns" {
-  project = var.project_id
-  service = "dns.googleapis.com"
-}
-
 # Service account for nodes
 resource "google_service_account" "nodes" {
   account_id   = "${var.cluster_name}-nodes"
@@ -78,12 +72,19 @@ resource "google_compute_global_address" "psc_storage" {
 }
 
 # PSC forwarding rule targeting Google APIs (global)
+# Name must be 8-20 lowercase alphanumeric chars, starting with a letter, no hyphens
 resource "google_compute_global_forwarding_rule" "psc_storage" {
-  name                    = "${var.cluster_name}-psc-storage"
+  name                    = "pscstoragefwr01"
   network                 = google_compute_network.vpc.id
   ip_address              = google_compute_global_address.psc_storage.id
   load_balancing_scheme   = ""
   target                  = "vpc-sc"
+}
+
+# Wait for DNS API to propagate
+resource "time_sleep" "dns_api_ready" {
+  depends_on      = [google_project_service.dns]
+  create_duration = "30s"
 }
 
 # DNS zone to route *.googleapis.com to the PSC endpoint
@@ -91,7 +92,7 @@ resource "google_dns_managed_zone" "psc_storage" {
   name       = "${var.cluster_name}-psc-storage"
   dns_name   = "storage.googleapis.com."
 
-  depends_on = [google_project_service.dns]
+  depends_on = [time_sleep.dns_api_ready]
   visibility = "private"
 
   private_visibility_config {
