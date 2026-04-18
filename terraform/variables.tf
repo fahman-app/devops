@@ -37,6 +37,24 @@ variable "max_nodes" {
   default     = 3
 }
 
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_cidr" {
+  description = "CIDR block for the public subnet"
+  type        = string
+  default     = "10.0.0.0/19"
+}
+
+variable "private_subnet_cidr" {
+  description = "CIDR block for the private subnet"
+  type        = string
+  default     = "10.0.32.0/20"
+}
+
 variable "k8s_namespace" {
   description = "Kubernetes namespace for the workload identity binding"
   type        = string
