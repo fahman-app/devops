@@ -1,3 +1,9 @@
+# Enable Cloud DNS API
+resource "google_project_service" "dns" {
+  project = var.project_id
+  service = "dns.googleapis.com"
+}
+
 # Service account for nodes
 resource "google_service_account" "nodes" {
   account_id   = "${var.cluster_name}-nodes"
