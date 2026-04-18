@@ -17,6 +17,13 @@ This repository contains the infrastructure-as-code and Kubernetes manifest **ex
 │   ├── service.yaml        # ClusterIP Service template
 │   ├── ingress.yaml        # GCE Ingress template
 │   └── hpa.yaml            # HorizontalPodAutoscaler template
+│
+├── .github/workflows/      # CI/CD pipelines
+│   ├── gke-infra.yml       # Terraform plan & apply on push to staging
+│   ├── gke-destroy.yml     # Terraform destroy (manual trigger)
+│   └── deploy-ingress.yml  # Deploy ingress & External Secrets after infra
+│
+└── setup-env.sh            # Script to set all GitHub environment secrets via gh CLI
 ```
 
 ## Terraform — Infrastructure
@@ -144,10 +151,20 @@ The CI/CD workflows run under a GitHub Environment called **`Staging`**. You mus
 | `GKE_MACHINE_TYPE`      | Node machine type (optional, defaults to `e2-standard-2`)            | `e2-standard-2`                                        |
 | `GKE_MIN_NODES`         | Minimum node count (optional, defaults to `1`)                       | `1`                                                    |
 | `GKE_MAX_NODES`         | Maximum node count (optional, defaults to `3`)                       | `3`                                                    |
-| `TF_BACKEND_BUCKET`     | GCS bucket name for Terraform remote state                           | `my-tf-state-bucket`                                   |
-| `TF_BACKEND_PREFIX`     | Prefix/path inside the state bucket                                  | `staging/terraform.tfstate`                            |
+| `TF_BACKEND_BUCKET`     | GCS bucket name for Terraform remote state                           | `fahman-terraform`                                     |
+| `TF_BACKEND_PREFIX`     | Prefix/path inside the state bucket                                  | `root`                                                 |
 | `GCP_WORKLOAD_SA_EMAIL` | Email of the Workload Identity GCP service account                   | `test-cluster-workload@fahman.iam.gserviceaccount.com` |
 | `GCP_SECRET_NAME`       | GCP Secret Manager secret name used by External Secrets              | `my-app-secrets`                                       |
+
+### Quick Setup
+
+You can set all secrets automatically using the included script (requires the [GitHub CLI](https://cli.github.com/)):
+
+```bash
+./setup-env.sh
+```
+
+> **Note:** `GOOGLE_CREDENTIALS` must be added manually via the GitHub UI since it contains a full JSON key.
 
 ### Variables
 
@@ -156,3 +173,11 @@ The CI/CD workflows run under a GitHub Environment called **`Staging`**. You mus
 | `SERVICE_NAME`   | Application / microservice name used in K8s manifests | `fahman-app` |
 | `NAMESPACE_NAME` | Kubernetes namespace to deploy into                   | `default`    |
 | `SA_NAME`        | Kubernetes ServiceAccount name for the workload       | `app-sa`     |
+
+### Workflows
+
+| Workflow             | Trigger                              | Description                                                            |
+| -------------------- | ------------------------------------ | ---------------------------------------------------------------------- |
+| `gke-infra.yml`      | Push to `staging` or manual          | Runs Terraform plan then apply to provision/update infrastructure      |
+| `gke-destroy.yml`    | Manual only                          | Runs Terraform destroy to tear down all infrastructure                 |
+| `deploy-ingress.yml` | After `gke-infra` succeeds or manual | Deploys ingress manifests and External Secrets Operator to the cluster |

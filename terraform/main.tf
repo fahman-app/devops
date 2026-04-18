@@ -62,24 +62,21 @@ resource "google_compute_router_nat" "nat" {
   }
 }
 
-# Static internal IP for PSC endpoint
-resource "google_compute_address" "psc_storage" {
+# Global internal IP for PSC endpoint
+resource "google_compute_global_address" "psc_storage" {
   name         = "${var.cluster_name}-psc-storage"
   address_type = "INTERNAL"
-  subnetwork   = google_compute_subnetwork.private.id
-  region       = var.region
-  purpose      = "GCE_ENDPOINT"
+  network      = google_compute_network.vpc.id
+  purpose      = "PRIVATE_SERVICE_CONNECT"
 }
 
-# PSC forwarding rule targeting Cloud Storage
-resource "google_compute_forwarding_rule" "psc_storage" {
+# PSC forwarding rule targeting Google APIs (global)
+resource "google_compute_global_forwarding_rule" "psc_storage" {
   name                    = "${var.cluster_name}-psc-storage"
-  region                  = var.region
   network                 = google_compute_network.vpc.id
-  ip_address              = google_compute_address.psc_storage.id
+  ip_address              = google_compute_global_address.psc_storage.id
   load_balancing_scheme   = ""
   target                  = "vpc-sc"
-  allow_psc_global_access = true
 }
 
 # DNS zone to route *.googleapis.com to the PSC endpoint
@@ -100,7 +97,7 @@ resource "google_dns_record_set" "psc_storage" {
   name         = "storage.googleapis.com."
   type         = "A"
   ttl          = 300
-  rrdatas      = [google_compute_address.psc_storage.address]
+  rrdatas      = [google_compute_global_address.psc_storage.address]
 }
 
 resource "google_dns_record_set" "psc_storage_wildcard" {
