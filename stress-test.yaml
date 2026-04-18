@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-stress-1
+  namespace: test
+spec:
+  containers:
+    - name: stress
+      image: busybox
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests:
+          cpu: "500m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-stress-2
+  namespace: test
+spec:
+  containers:
+    - name: stress
+      image: busybox
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests:
+          cpu: "500m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-stress-3
+  namespace: test
+spec:
+  containers:
+    - name: stress
+      image: busybox
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests:
+          cpu: "500m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-stress-4
+  namespace: test
+spec:
+  containers:
+    - name: stress
+      image: busybox
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests:
+          cpu: "500m"

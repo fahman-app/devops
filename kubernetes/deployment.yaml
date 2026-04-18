@@ -1,0 +1,63 @@
+#deployment
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ${SERVICE_NAME}
+  labels:
+    name: ${SERVICE_NAME}
+  namespace: ${NAMESPACE_NAME}
+spec:
+  revisionHistoryLimit: 3
+  replicas: ${NUM_REPLICAS}
+  selector:
+    matchLabels:
+      name: ${SERVICE_NAME}
+  template:
+    metadata:
+      labels:
+        name: ${SERVICE_NAME}
+    spec:
+      imagePullSecrets:
+        - name: oncg-credentials
+      restartPolicy: Always
+      serviceAccountName: ${SA_NAME}
+      containers:
+        - image: ${DOCKER_IMAGE_TAG}
+          name: ${SERVICE_NAME}
+          ports:
+            - containerPort: ${SERVICE_PORT}
+          resources:
+            requests:
+              cpu: ${CPU_REQUEST}
+              memory: ${MEMORY_REQUEST}
+            limits:
+              cpu: ${CPU_LIMIT}
+              memory: ${MEMORY_LIMIT}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /_status/healthz
+          #     port: ${SERVICE_PORT}
+          #   initialDelaySeconds: ${LIVENESS_INITIAL_DELAY_SECONDS}
+          #   timeoutSeconds: 10
+          # readinessProbe:
+          #   httpGet:
+          #     path: /_status/healthz
+          #     port: ${SERVICE_PORT}
+          #   initialDelaySeconds: ${READINESS_INITIAL_DELAY_SECONDS}
+          #   timeoutSeconds: 10
+          env:
+            - name: ENVVARNAME
+              value: ENVVARVALUE
+          envFrom:
+            - secretRef:
+                name: ${SERVICE_NAME}-secrets
+          volumeMounts:
+            - name: ${SERVICE_NAME}-secrets-volume
+              mountPath: /mnt/secrets
+      volumes:
+        - name: ${SERVICE_NAME}-secrets-volume
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ${SERVICE_NAME}-spc

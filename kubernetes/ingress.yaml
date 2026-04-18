@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fahman-ingress
+  namespace: ${NAMESPACE_NAME}
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "fahman-ip"
+    # networking.gke.io/managed-certificates: "${SERVICE_NAME}-cert"
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+    - host: app.fahman.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fahman-app
+                port:
+                  number: 80
+    - host: ed.fahman.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fahman-ed
+                port:
+                  number: 80

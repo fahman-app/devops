@@ -1,0 +1,59 @@
+name: gke-destroy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: gke-infra-staging
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    environment: Staging
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_LOCATION: ${{ secrets.GCP_LOCATION }}
+      GKE_CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
+      GKE_MACHINE_TYPE: ${{ secrets.GKE_MACHINE_TYPE }}
+      GKE_MIN_NODES: ${{ secrets.GKE_MIN_NODES }}
+      GKE_MAX_NODES: ${{ secrets.GKE_MAX_NODES }}
+      TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+      TF_BACKEND_PREFIX: ${{ secrets.TF_BACKEND_PREFIX }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="prefix=${TF_BACKEND_PREFIX}"
+
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var "project_id=${GCP_PROJECT_ID}" \
+            -var "region=${GCP_REGION}" \
+            -var "location=${GCP_LOCATION}" \
+            -var "cluster_name=${GKE_CLUSTER_NAME:-app-cluster}" \
+            -var "machine_type=${GKE_MACHINE_TYPE:-e2-standard-2}" \
+            -var "min_nodes=${GKE_MIN_NODES:-1}" \
+            -var "max_nodes=${GKE_MAX_NODES:-3}"

@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  ${SERVICE_NAME}
+  namespace: ${NAMESPACE_NAME}
+spec:
+  selector:
+    name:  ${SERVICE_NAME}
+  type:  ClusterIP
+  ports:
+  - name:  tcp
+    port:  80
+    targetPort:  ${SERVICE_PORT}

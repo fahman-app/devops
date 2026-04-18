@@ -1,0 +1,94 @@
+name: deploy-ingress
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["gke-infra"]
+    branches: ["staging"]
+    types:
+      - completed
+
+concurrency:
+  group: deploy-ingress-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-ingress:
+    name: Deploy Ingress Only
+    runs-on: ubuntu-latest
+    environment: Staging
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_LOCATION: ${{ secrets.GCP_LOCATION }}
+      GKE_CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
+      SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+      NAMESPACE_NAME: ${{ vars.NAMESPACE_NAME }}
+      SA_NAME: ${{ vars.SA_NAME }}
+      GCP_SA_EMAIL: ${{ secrets.GCP_WORKLOAD_SA_EMAIL }}
+      GCP_SECRET_NAME: ${{ secrets.GCP_SECRET_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GCP_LOCATION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext-base
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Add Helm Repos
+        run: |
+          helm repo add external-secrets https://charts.external-secrets.io
+          helm repo update
+
+      - name: Ensure Namespace
+        run: |
+          kubectl create namespace "$NAMESPACE_NAME" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Render Ingress Manifest
+        run: |
+          mkdir -p rendered
+          envsubst < kubernetes/ingress.yaml > rendered/ingress.yaml
+
+      - name: Render External Secrets Helm Values
+        run: |
+          mkdir -p rendered
+          envsubst < kubernetes/external-secrets-values.yaml > rendered/external-secrets-values.yaml
+
+      - name: Render ClusterSecretStore Manifest
+        run: |
+          mkdir -p rendered
+          envsubst < kubernetes/cluster-secret-store.yaml > rendered/cluster-secret-store.yaml
+
+      - name: Install External Secrets Operator
+        run: |
+          helm upgrade --install external-secrets \
+            external-secrets/external-secrets \
+            --namespace external-secrets \
+            --create-namespace \
+            --values rendered/external-secrets-values.yaml \
+            --wait
+
+      - name: Apply ClusterSecretStore
+        run: |
+          kubectl apply -f rendered/cluster-secret-store.yaml
+
+      - name: Apply Ingress
+        run: |
+          kubectl apply -f rendered/ingress.yaml
