@@ -127,3 +127,32 @@ export NUM_REPLICAS=2
 
 envsubst < kubernetes/deployment.yaml | kubectl apply -f -
 ```
+
+## GitHub Environment Setup
+
+The CI/CD workflows run under a GitHub Environment called **`Staging`**. You must configure the following **secrets** and **variables** in your repository settings under **Settings → Environments → Staging**.
+
+### Secrets
+
+| Secret                  | Description                                                          | Example                                                |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
+| `GOOGLE_CREDENTIALS`    | GCP service account key JSON (base64 or raw) used for authentication | `{"type":"service_account",...}`                       |
+| `GCP_PROJECT_ID`        | GCP project ID                                                       | `fahman`                                               |
+| `GCP_REGION`            | GCP region                                                           | `europe-west3`                                         |
+| `GCP_LOCATION`          | GKE cluster location (zone or region)                                | `europe-west3`                                         |
+| `GKE_CLUSTER_NAME`      | Name of the GKE cluster                                              | `test-cluster`                                         |
+| `GKE_MACHINE_TYPE`      | Node machine type (optional, defaults to `e2-standard-2`)            | `e2-standard-2`                                        |
+| `GKE_MIN_NODES`         | Minimum node count (optional, defaults to `1`)                       | `1`                                                    |
+| `GKE_MAX_NODES`         | Maximum node count (optional, defaults to `3`)                       | `3`                                                    |
+| `TF_BACKEND_BUCKET`     | GCS bucket name for Terraform remote state                           | `my-tf-state-bucket`                                   |
+| `TF_BACKEND_PREFIX`     | Prefix/path inside the state bucket                                  | `staging/terraform.tfstate`                            |
+| `GCP_WORKLOAD_SA_EMAIL` | Email of the Workload Identity GCP service account                   | `test-cluster-workload@fahman.iam.gserviceaccount.com` |
+| `GCP_SECRET_NAME`       | GCP Secret Manager secret name used by External Secrets              | `my-app-secrets`                                       |
+
+### Variables
+
+| Variable         | Description                                           | Example      |
+| ---------------- | ----------------------------------------------------- | ------------ |
+| `SERVICE_NAME`   | Application / microservice name used in K8s manifests | `fahman-app` |
+| `NAMESPACE_NAME` | Kubernetes namespace to deploy into                   | `default`    |
+| `SA_NAME`        | Kubernetes ServiceAccount name for the workload       | `app-sa`     |
